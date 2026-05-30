@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getUserProfile } from "@/lib/auth";
@@ -23,6 +24,32 @@ function normalizeNext(next: string | null) {
   }
 
   return next;
+}
+
+function isLocalhost(origin: string) {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+async function getEmailRedirectTo() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const requestOrigin = host ? `${proto}://${host}` : null;
+
+  const siteOrigin =
+    configuredSiteUrl && !isLocalhost(configuredSiteUrl)
+      ? configuredSiteUrl
+      : requestOrigin && !isLocalhost(requestOrigin)
+        ? requestOrigin
+        : (configuredSiteUrl ?? requestOrigin ?? "http://localhost:3000");
+
+  return `${siteOrigin}/auth/confirm`;
 }
 
 export async function login(formData: FormData) {
@@ -80,7 +107,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm`,
+      emailRedirectTo: await getEmailRedirectTo(),
     },
   });
 
