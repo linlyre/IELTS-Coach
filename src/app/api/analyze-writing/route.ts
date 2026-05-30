@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { validateWritingSubmission } from "@/lib/writing-validation";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 function errorResponse(message: string, status: number, details?: Record<string, unknown>) {
   return NextResponse.json({ error: message, ...details }, { status });
