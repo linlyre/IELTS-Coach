@@ -6,6 +6,7 @@ import { formatBandValue } from "@/lib/profile";
 import { submitWritingPractice } from "@/app/write/actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 type WritePageProps = {
   searchParams?: Promise<{

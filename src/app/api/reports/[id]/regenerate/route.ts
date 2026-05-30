@@ -16,6 +16,8 @@ import { recordReportEvent } from "@/lib/monitoring";
 import { sanitizeErrorMessage } from "@/lib/safe-error";
 import { createClient } from "@/lib/supabase/server";
 
+export const maxDuration = 180;
+
 type RegenerateRouteProps = {
   params: Promise<{ id: string }>;
 };

@@ -1,6 +1,43 @@
 import { z } from "zod";
 
-const bandScoreSchema = z.number().min(0).max(9).multipleOf(0.5);
+function coerceNumber(value: unknown) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const parsed = Number(value.trim());
+
+  return Number.isFinite(parsed) ? parsed : value;
+}
+
+function extractJsonObject(rawContent: string) {
+  const withoutFence = rawContent
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  const firstBrace = withoutFence.indexOf("{");
+  const lastBrace = withoutFence.lastIndexOf("}");
+
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return withoutFence.slice(firstBrace, lastBrace + 1);
+  }
+
+  return withoutFence;
+}
+
+const numberSchema = z.preprocess(coerceNumber, z.number());
+const bandScoreSchema = z.preprocess(
+  coerceNumber,
+  z
+    .number()
+    .min(0)
+    .max(9)
+    .refine((value) => Number.isInteger(value * 2), {
+      message: "Score must use 0.5 increments",
+    }),
+);
 const nonEmptyStringSchema = z.string().trim().min(1);
 
 const criterionSchema = z
@@ -14,10 +51,10 @@ export const writingReportSchema = z
   .object({
     coach_summary: nonEmptyStringSchema,
     diagnostic_band: bandScoreSchema,
-    target_band: z.number().refine((value) => [6, 6.5, 7, 7.5].includes(value), {
+    target_band: numberSchema.refine((value) => [6, 6.5, 7, 7.5].includes(value), {
       message: "target_band must be one of 6.0, 6.5, 7.0, 7.5",
     }),
-    word_count: z.number().int().min(0),
+    word_count: z.preprocess(coerceNumber, z.number().int().min(0)),
     biggest_gap: nonEmptyStringSchema,
     priority_fix: nonEmptyStringSchema,
     next_practice_suggestion: nonEmptyStringSchema,
@@ -89,7 +126,7 @@ export const writingReportSchema = z
           .object({
             title: nonEmptyStringSchema,
             description: nonEmptyStringSchema,
-            estimated_minutes: z.number().int().min(1),
+            estimated_minutes: z.preprocess(coerceNumber, z.number().int().min(1)),
             focus_area: nonEmptyStringSchema,
           })
           .strict(),
@@ -108,6 +145,6 @@ export const writingReportSchema = z
 export type WritingReportJson = z.infer<typeof writingReportSchema>;
 
 export function parseWritingReportJson(rawContent: string) {
-  const parsed = JSON.parse(rawContent);
+  const parsed = JSON.parse(extractJsonObject(rawContent));
   return writingReportSchema.parse(parsed);
 }

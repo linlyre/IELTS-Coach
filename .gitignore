@@ -40,8 +40,6 @@ supabase/.temp/
 # Internal docs (local/dev only)
 PLANS.md
 AGENTS.md
-SKILLS/
-SKILLS/**
 design/
 design/**
 DEPLOY.md

@@ -4,7 +4,6 @@
 # Development-only agent and planning context
 /AGENTS.md
 /PLANS.md
-/SKILLS/
 /.github/
 
 # Design references and product planning docs are not needed at runtime

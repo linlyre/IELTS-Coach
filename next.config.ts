@@ -21,6 +21,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["10.65.48.72"],
+  outputFileTracingIncludes: {
+    "/*": ["./SKILLS/writing.md"],
+  },
   async headers() {
     return [
       {

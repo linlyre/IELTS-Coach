@@ -1,5 +1,8 @@
 import "server-only";
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import type { UserProfile } from "@/lib/auth";
 
 type BuildWritingCoachPromptInput = {
@@ -12,17 +15,17 @@ type BuildWritingCoachPromptInput = {
 
 const jsonContract = {
   coach_summary: "中文训练诊断总结",
-  diagnostic_band: 6.0,
-  target_band: 6.5,
+  diagnostic_band: 7.0,
+  target_band: 7.0,
   word_count: 285,
   biggest_gap: "Lexical Resource",
   priority_fix: "中文优先改进项",
   next_practice_suggestion: "中文下一次练习建议",
   criteria: {
-    task_response: { score: 6.0, comment: "中文解释" },
-    coherence_cohesion: { score: 6.0, comment: "中文解释" },
-    lexical_resource: { score: 5.5, comment: "中文解释" },
-    grammar_range_accuracy: { score: 6.0, comment: "中文解释" },
+    task_response: { score: 7.0, comment: "中文解释" },
+    coherence_cohesion: { score: 7.0, comment: "中文解释" },
+    lexical_resource: { score: 7.0, comment: "中文解释" },
+    grammar_range_accuracy: { score: 7.0, comment: "中文解释" },
   },
   weakness_tags: [
     {
@@ -79,6 +82,17 @@ const jsonContract = {
   disclaimer: "This is AI-generated training feedback, not an official IELTS score.",
 };
 
+let writingSkillReference: string | undefined;
+
+function loadWritingSkillReference() {
+  writingSkillReference ??= readFileSync(
+    path.join(process.cwd(), "SKILLS", "writing.md"),
+    "utf8",
+  ).trim();
+
+  return writingSkillReference;
+}
+
 export function buildWritingCoachPrompt({
   userProfile,
   questionPrompt,
@@ -86,7 +100,11 @@ export function buildWritingCoachPrompt({
   targetBand,
   previousWeaknessSummary,
 }: BuildWritingCoachPromptInput) {
+  const skillReference = loadWritingSkillReference();
   const systemPrompt = [
+    "以下是产品化写作评分规则来源，必须优先遵守：",
+    skillReference,
+    "",
     "你是 IELTS Writing Growth Coach 的服务端批改模型。",
     "你的角色是雅思写作私人教练，不是官方 IELTS 考官，也不是泛用作文检查器。",
     "只支持 IELTS Writing Task 2，只分析用户提交的英文作文。",
@@ -114,8 +132,10 @@ export function buildWritingCoachPrompt({
     essayText,
     "",
     "评分与反馈要求：",
-    "- diagnostic_band 必须是 0-9 之间的 0.5 间隔训练诊断分，不是官方分数。",
-    "- criteria 四项都必须给分和中文解释。",
+    "- diagnostic_band 必须是 5.5-8.0 之间的 0.5 间隔训练诊断分，不是官方分数；只有严重偏题、明显低于最低字数或无法理解时才可低于 5.5。",
+    "- criteria 四项都必须给分和中文解释，常规分数同样在 5.5-8.0 之间。",
+    `- target_band 必须返回用户目标分 ${targetBand.toFixed(1)}，word_count 必须返回实际字数 ${essayText.trim().split(/\s+/).filter(Boolean).length}。`,
+    "- 严格按用户作文证据给分，不默认保守压分，也不为了鼓励而抬分。",
     "- weakness_tags 至少 1 个，severity 只能是 low、medium、high。",
     "- red_sentences 用于准确性问题；yellow_sentences 用于提分空间。",
     "- criteria_advice 必须覆盖四个 IELTS 维度。",
@@ -123,7 +143,7 @@ export function buildWritingCoachPrompt({
     "- training_plan 必须刚好 3 个任务。",
     "- disclaimer 必须包含非官方 IELTS 分数说明。",
     "",
-    "严格按此 JSON 形状返回，不要增加其他字段：",
+    "严格按此 JSON 形状返回，不要增加其他字段。下方数字只是 JSON 类型示例，不是默认分数；所有数值字段必须返回 number，不要返回字符串：",
     JSON.stringify(jsonContract, null, 2),
   ].join("\n");
 

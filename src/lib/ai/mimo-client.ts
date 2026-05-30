@@ -16,7 +16,7 @@ type ChatCompletionResponse = {
   };
 };
 
-const DEFAULT_MIMO_TIMEOUT_MS = 120_000;
+const DEFAULT_MIMO_TIMEOUT_MS = 180_000;
 const DEFAULT_MIMO_MAX_RETRIES = 2;
 const DEFAULT_MIMO_RETRY_BASE_DELAY_MS = 800;
 
