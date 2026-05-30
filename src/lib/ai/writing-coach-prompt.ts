@@ -15,17 +15,20 @@ type BuildWritingCoachPromptInput = {
 
 const jsonContract = {
   coach_summary: "中文训练诊断总结",
-  diagnostic_band: 6.0,
-  target_band: 6.5,
+  diagnostic_band: "5.5-8.0 之间的 0.5 间隔训练诊断分",
+  target_band: "用户目标分",
   word_count: 285,
   biggest_gap: "Lexical Resource",
   priority_fix: "中文优先改进项",
   next_practice_suggestion: "中文下一次练习建议",
   criteria: {
-    task_response: { score: 6.0, comment: "中文解释" },
-    coherence_cohesion: { score: 6.0, comment: "中文解释" },
-    lexical_resource: { score: 5.5, comment: "中文解释" },
-    grammar_range_accuracy: { score: 6.0, comment: "中文解释" },
+    task_response: { score: "5.5-8.0 之间的 0.5 间隔分数", comment: "中文解释" },
+    coherence_cohesion: { score: "5.5-8.0 之间的 0.5 间隔分数", comment: "中文解释" },
+    lexical_resource: { score: "5.5-8.0 之间的 0.5 间隔分数", comment: "中文解释" },
+    grammar_range_accuracy: {
+      score: "5.5-8.0 之间的 0.5 间隔分数",
+      comment: "中文解释",
+    },
   },
   weakness_tags: [
     {
@@ -132,8 +135,9 @@ export function buildWritingCoachPrompt({
     essayText,
     "",
     "评分与反馈要求：",
-    "- diagnostic_band 必须是 0-9 之间的 0.5 间隔训练诊断分，不是官方分数。",
-    "- criteria 四项都必须给分和中文解释。",
+    "- diagnostic_band 必须是 5.5-8.0 之间的 0.5 间隔训练诊断分，不是官方分数；只有严重偏题、明显低于最低字数或无法理解时才可低于 5.5。",
+    "- criteria 四项都必须给分和中文解释，常规分数同样在 5.5-8.0 之间。",
+    "- 严格按用户作文证据给分，不默认保守压分，也不为了鼓励而抬分。",
     "- weakness_tags 至少 1 个，severity 只能是 low、medium、high。",
     "- red_sentences 用于准确性问题；yellow_sentences 用于提分空间。",
     "- criteria_advice 必须覆盖四个 IELTS 维度。",
@@ -141,7 +145,7 @@ export function buildWritingCoachPrompt({
     "- training_plan 必须刚好 3 个任务。",
     "- disclaimer 必须包含非官方 IELTS 分数说明。",
     "",
-    "严格按此 JSON 形状返回，不要增加其他字段：",
+    "严格按此 JSON 形状返回，不要增加其他字段。下方字符串是字段说明，不是评分示例或默认分数：",
     JSON.stringify(jsonContract, null, 2),
   ].join("\n");
 
