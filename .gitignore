@@ -1,0 +1,58 @@
+.DS_Store
+*.pem
+
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+
+# production
+dist/
+
+# misc
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env*
+!.env.example
+
+# vercel
+.vercel/
+
+# supabase local cache
+supabase/.temp/
+
+# typescript
+*.tsbuildinfo
+
+# Internal docs (local/dev only)
+PLANS.md
+AGENTS.md
+SKILLS/
+SKILLS/**
+design/
+design/**
+DEPLOY.md
+
+# Local IDE and caches
+.vscode/
+.idea/
+.cache/
+.turbo/
+
+# Private keys and secrets
+*.key
+*.pem
+secrets/
