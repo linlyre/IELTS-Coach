@@ -2,18 +2,18 @@
 .env*
 
 # Development-only agent and planning context
-AGENTS.md
-PLANS.md
-SKILLS/
-.github/
+/AGENTS.md
+/PLANS.md
+/SKILLS/
+/.github/
 
 # Design references and product planning docs are not needed at runtime
-design/
+/design/
 
 # Supabase migrations/seeds are applied outside the Vercel build
-supabase/
+/supabase/
 
 # Repository docs and local OS metadata
-README.md
-DEPLOY.md
-.DS_Store
+/README.md
+/DEPLOY.md
+/.DS_Store
