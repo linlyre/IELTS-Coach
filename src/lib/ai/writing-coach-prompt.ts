@@ -1,5 +1,8 @@
 import "server-only";
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import type { UserProfile } from "@/lib/auth";
 
 type BuildWritingCoachPromptInput = {
@@ -79,6 +82,17 @@ const jsonContract = {
   disclaimer: "This is AI-generated training feedback, not an official IELTS score.",
 };
 
+let writingSkillReference: string | undefined;
+
+function loadWritingSkillReference() {
+  writingSkillReference ??= readFileSync(
+    path.join(process.cwd(), "SKILLS", "writing.md"),
+    "utf8",
+  ).trim();
+
+  return writingSkillReference;
+}
+
 export function buildWritingCoachPrompt({
   userProfile,
   questionPrompt,
@@ -86,7 +100,11 @@ export function buildWritingCoachPrompt({
   targetBand,
   previousWeaknessSummary,
 }: BuildWritingCoachPromptInput) {
+  const skillReference = loadWritingSkillReference();
   const systemPrompt = [
+    "以下是产品化写作评分规则来源，必须优先遵守：",
+    skillReference,
+    "",
     "你是 IELTS Writing Growth Coach 的服务端批改模型。",
     "你的角色是雅思写作私人教练，不是官方 IELTS 考官，也不是泛用作文检查器。",
     "只支持 IELTS Writing Task 2，只分析用户提交的英文作文。",
