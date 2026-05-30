@@ -1,6 +1,8 @@
 "use server";
 
+import type { User } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getUserProfile } from "@/lib/auth";
@@ -23,6 +25,54 @@ function normalizeNext(next: string | null) {
   }
 
   return next;
+}
+
+function isLocalhost(origin: string) {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+async function getEmailRedirectTo() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const requestOrigin = host ? `${proto}://${host}` : null;
+
+  const siteOrigin =
+    configuredSiteUrl && !isLocalhost(configuredSiteUrl)
+      ? configuredSiteUrl
+      : requestOrigin && !isLocalhost(requestOrigin)
+        ? requestOrigin
+        : (configuredSiteUrl ?? requestOrigin ?? "http://localhost:3000");
+
+  return `${siteOrigin}/auth/confirm`;
+}
+
+function shouldResendSignupConfirmation(user: User | null) {
+  return Array.isArray(user?.identities) && user.identities.length === 0;
+}
+
+function isEmailRateLimitError(error: { code?: string; message?: string; status?: number }) {
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    error.status === 429 ||
+    error.code === "over_email_send_rate_limit" ||
+    message.includes("rate limit") ||
+    message.includes("security purposes")
+  );
+}
+
+function getSignupErrorMessage(error: { code?: string; message?: string; status?: number }) {
+  if (isEmailRateLimitError(error)) {
+    return "确认邮件发送过于频繁，请稍等 1 分钟后再试，或先检查收件箱和垃圾邮件。";
+  }
+
+  return "注册失败，请稍后重试或更换邮箱。";
 }
 
 export async function login(formData: FormData) {
@@ -76,22 +126,37 @@ export async function signup(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const emailRedirectTo = await getEmailRedirectTo();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm`,
+      emailRedirectTo,
     },
   });
 
   if (error) {
-    redirectWithMessage("/auth/signup", "注册失败，请稍后重试或更换邮箱。");
+    redirectWithMessage("/auth/signup", getSignupErrorMessage(error));
   }
 
   if (data.session && data.user) {
     await ensureUserProfile(data.user.id);
     revalidatePath("/", "layout");
     redirect("/onboarding");
+  }
+
+  if (shouldResendSignupConfirmation(data.user)) {
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo,
+      },
+    });
+
+    if (resendError) {
+      redirectWithMessage("/auth/signup", getSignupErrorMessage(resendError));
+    }
   }
 
   redirectWithMessage(
